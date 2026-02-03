@@ -82,20 +82,32 @@ function loadSound(path)
     pendingStuffToLoad += 1;
     let ret = new Audio(path);
     ret.preload = "auto";
-    ret.load();
-    ret.onloadeddata = function()
-    {
-        // if(!audioHackPlayedSilentSoundToPreventLag)
-        // {
-        //     audioHackPlayedSilentSoundToPreventLag = true;
-        //     let old = ret.volume;
-        //     ret.volume = 0.00001;
-        //     ret.play();
-        //     ret.volume = old;
-        // }
-        allSounds.push(ret);
-        pendingStuffToLoad -= 1;
+    let loaded = false;
+    let markLoaded = function() {
+        if (!loaded) {
+            loaded = true;
+            allSounds.push(ret);
+            pendingStuffToLoad -= 1;
+        }
     };
+    ret.onloadeddata = markLoaded;
+    ret.oncanplaythrough = markLoaded;
+    ret.onerror = function() {
+        if (!loaded) {
+            loaded = true;
+            pendingStuffToLoad -= 1;
+            console.warn("Failed to load sound: " + path);
+        }
+    };
+    // Fallback timeout for WebView compatibility
+    setTimeout(function() {
+        if (!loaded) {
+            loaded = true;
+            pendingStuffToLoad -= 1;
+            console.warn("Sound load timeout: " + path);
+        }
+    }, 5000);
+    ret.load();
     return ret;
 }
 
@@ -103,13 +115,18 @@ function loadImage(path, fnAfterLoad)
 {
     pendingStuffToLoad += 1;
     let ret = new Image();
-    ret.src = "data/"+path;
     ret.onload = function()
     {
         pendingStuffToLoad -= 1;
         if(fnAfterLoad != null) fnAfterLoad(ret);
     };
-    return ret;    
+    ret.onerror = function()
+    {
+        pendingStuffToLoad -= 1;
+        console.warn("Failed to load image: " + path);
+    };
+    ret.src = "data/"+path;
+    return ret;
 }
 
 function loadStrip(path, cellw, cellh, pivotx, pivoty, colorMultiplier = 0xffffff, fnAfterLoad)
