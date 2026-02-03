@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+
+# Android build artifacts
+android/app/build/
+android/.gradle/
+android/build/
+*.apk
+*.aab
+
+# iOS build artifacts
+ios/App/Pods/
+ios/App/build/
+*.ipa
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.log
+*.tmp
+*.temp
+
+# Source zip (downloaded)
+dragonsweeper_sources.zip
+game_src/
+
+# Environment
+.env
+.env.local

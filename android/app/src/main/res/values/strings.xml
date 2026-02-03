@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Dragonsweeper</string>
+    <string name="title_activity_main">Dragonsweeper</string>
+    <string name="package_name">com.danielbenmergui.dragonsweeper</string>
+    <string name="custom_url_scheme">com.danielbenmergui.dragonsweeper</string>
+</resources>

@@ -1,0 +1,22 @@
+{
+  "appId": "com.danielbenmergui.dragonsweeper",
+  "appName": "Dragonsweeper",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "backgroundColor": "#000000",
+    "allowMixedContent": true,
+    "captureInput": true,
+    "webContentsDebuggingEnabled": false
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 2000,
+      "backgroundColor": "#000000",
+      "showSpinner": false,
+      "androidScaleType": "CENTER_CROP"
+    }
+  }
+}
