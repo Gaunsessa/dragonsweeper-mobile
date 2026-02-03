@@ -3032,10 +3032,11 @@ function updatePlaying(ctx, dt)
         else
         if(oldPlayerHP > state.player.hp)
         {
+            play("hit_hurt");
             for(let i = state.player.hp; i < oldPlayerHP; i++)
             {
                 startHeartAnimation(i, HEART_DRAINING);
-            }    
+            }
         }
     }
 
@@ -3827,6 +3828,7 @@ function onUpdate(phase, dt)
         addSound("fight", "fight2.wav");
         addSound("fight", "fight3.wav");
         addSound("fight_special", "hit_hard.wav");
+        addSound("hit_hurt", "hitHurt.wav");
         addSound("spell", "spell2.wav");
         addSound("wall_down", "wall_down.wav");
         addSound("level_up", "level_up.wav");
