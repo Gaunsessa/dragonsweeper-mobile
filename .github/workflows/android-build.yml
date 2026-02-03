@@ -1,0 +1,131 @@
+name: Android Build & Release
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Sync Capacitor
+        run: npx cap sync android
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x android/gradlew
+
+      - name: Build Debug APK
+        run: |
+          cd android
+          ./gradlew assembleDebug
+
+      - name: Build Release APK
+        run: |
+          cd android
+          ./gradlew assembleRelease
+
+      - name: Upload Debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: dragonsweeper-debug
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30
+
+      - name: Upload Release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: dragonsweeper-release
+          path: android/app/build/outputs/apk/release/app-release.apk
+          retention-days: 30
+
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download Debug APK
+        uses: actions/download-artifact@v4
+        with:
+          name: dragonsweeper-debug
+          path: ./artifacts/debug
+
+      - name: Download Release APK
+        uses: actions/download-artifact@v4
+        with:
+          name: dragonsweeper-release
+          path: ./artifacts/release
+
+      - name: Get version from tag
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Rename APKs
+        run: |
+          mv ./artifacts/debug/app-debug.apk ./artifacts/dragonsweeper-${{ steps.get_version.outputs.VERSION }}-debug.apk
+          mv ./artifacts/release/app-release.apk ./artifacts/dragonsweeper-${{ steps.get_version.outputs.VERSION }}.apk
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: Dragonsweeper ${{ steps.get_version.outputs.VERSION }}
+          body: |
+            ## Dragonsweeper ${{ steps.get_version.outputs.VERSION }}
+
+            A roguelike minesweeper adventure!
+
+            ### Downloads
+            - **dragonsweeper-${{ steps.get_version.outputs.VERSION }}.apk** - Release build (recommended)
+            - **dragonsweeper-${{ steps.get_version.outputs.VERSION }}-debug.apk** - Debug build (for testing)
+
+            ### Installation
+            1. Download the APK file
+            2. Enable "Install from unknown sources" in your Android settings
+            3. Open the APK file to install
+
+            ### Credits
+            Game by Daniel Benmergui - https://danielben.itch.io/dragonsweeper
+          files: |
+            ./artifacts/dragonsweeper-${{ steps.get_version.outputs.VERSION }}.apk
+            ./artifacts/dragonsweeper-${{ steps.get_version.outputs.VERSION }}-debug.apk
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
