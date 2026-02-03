@@ -1250,9 +1250,12 @@ function getNeighborsCross(tx, ty)
     return ret;
 }
 
-function getRectForTile(tx, ty)
+// Reusable rect for temporary calculations to reduce allocations
+let _tempTileRect = new Rect();
+
+function getRectForTile(tx, ty, reuseRect = null)
 {
-    let r = new Rect();
+    let r = reuseRect || new Rect();
     r.w = 30;
     r.h = 30;
     r.x = tx * r.w;
@@ -2171,18 +2174,10 @@ function updatePlaying(ctx, dt)
     HUDRect.y = backBuffer.height - HUDRect.h;
     let oldPlayerHP = state.player.hp;
     let oldPlayerXP = state.player.xp;
-    /** @type {Actor[]} */
-    let activeActors = []; // TODO: remove this
-    let actorRects = []; // TODO: remove this
     let hoveringActorIndex = -1;
     let pressedActorIndex = -1;
     let clickedActorIndex = -1;
     let cycleMarkerActorIndex = -1;
-    for(let a of state.actors)
-    {
-        activeActors.push(a);
-        actorRects.push(getRectForTile(a.tx, a.ty));
-    }
 
     // marker
     // if(cycleMarkerActorIndex >= 0)
@@ -2315,10 +2310,10 @@ function updatePlaying(ctx, dt)
     else
     {
         state.lastHoveredHoverButtonIndex = -1;
-        for(let i = 0; i < activeActors.length; i++)
+        for(let i = 0; i < state.actors.length; i++)
         {
-            let a = activeActors[i];
-            let r = actorRects[i];
+            let a = state.actors[i];
+            let r = getRectForTile(a.tx, a.ty, _tempTileRect);
             if((!a.revealed || !isEmpty(a)) && state.status == GameStatus.Playing && r.contains(mousex, mousey) && !state.showingMonsternomicon)
             {
                 hoveringActorIndex = i;
@@ -2330,8 +2325,8 @@ function updatePlaying(ctx, dt)
 
         if(state.lastPushedButtonIndex >= 0)
         {
-            let a = activeActors[state.lastPushedButtonIndex];
-            let r = actorRects[state.lastPushedButtonIndex];
+            let a = state.actors[state.lastPushedButtonIndex];
+            let r = getRectForTile(a.tx, a.ty, _tempTileRect);
 
             // if(a.mark == 13 && !state.minesDisarmed)
             // {
@@ -2359,7 +2354,7 @@ function updatePlaying(ctx, dt)
 
         if(cycleMarkerActorIndex >= 0)
         {
-            let marked = activeActors[cycleMarkerActorIndex];
+            let marked = state.actors[cycleMarkerActorIndex];
             if(!marked.revealed)
             {
                 let menu = state.hoverMenu;
@@ -2367,14 +2362,14 @@ function updatePlaying(ctx, dt)
                 menu.actor = marked;
                 play("open_hover");
             }
-        }        
+        }
     }
 
     // turn
     if(clickedActorIndex >= 0)
     {
-        let pushed = activeActors[clickedActorIndex];
-        let pushedR = actorRects[clickedActorIndex];
+        let pushed = state.actors[clickedActorIndex];
+        let pushedR = getRectForTile(pushed.tx, pushed.ty);
 
         // special case for the gnome
         if(pushed.id == ActorId.Gnome)
@@ -2649,7 +2644,7 @@ function updatePlaying(ctx, dt)
                 makeEmptyAndReveal(pushed);
 
                 // method: reveal around the spell
-                let candidates = activeActors.filter(a => !a.revealed && distance(a.tx, a.ty, pushed.tx, pushed.ty) < ORB_RADIUS);
+                let candidates = state.actors.filter(a => !a.revealed && distance(a.tx, a.ty, pushed.tx, pushed.ty) < ORB_RADIUS);
                 let index = 0;
                 while(index < candidates.length)
                 {
@@ -3117,7 +3112,7 @@ function updatePlaying(ctx, dt)
             state.status = GameStatus.Dead;
         }
         else
-        if(activeActors.find(a => a.id == ActorId.Dragon && !a.defeated) == undefined)
+        if(state.actors.find(a => a.id == ActorId.Dragon && !a.defeated) == undefined)
         {
             state.dragonDefeated = true;
         }
@@ -3238,13 +3233,13 @@ function updatePlaying(ctx, dt)
     // ctx.fillStyle = "#30291f";
     // ctx.fillRect(0, 0, worldR.w, worldR.h);
     let showEverything = state.status == GameStatus.Dead;
-    for(let i = 0; i < activeActors.length; i++)
+    for(let i = 0; i < state.actors.length; i++)
     {
-        let a = activeActors[i];
-        let r = actorRects[i];
+        let a = state.actors[i];
+        let r = getRectForTile(a.tx, a.ty);
         let centerx = r.centerx();
         let centery = r.centery();
-        let pressed = pressedActorIndex >= 0 && activeActors[pressedActorIndex] === a;
+        let pressed = pressedActorIndex >= 0 && state.actors[pressedActorIndex] === a;
         let icon = pressed ? 1 : 0;
         if(isEmpty(a) && a.revealed) icon = 1;
         if(showEverything) icon = 1;

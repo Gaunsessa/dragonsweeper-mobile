@@ -36,6 +36,8 @@ let keysPressed = [];
 let shiftIsPressed = false;
 let lastUpdateTime = Date.now();
 let timeElapsed = 0;
+let appPaused = false;
+let musicWasPlayingBeforePause = false;
 
 class UpdatePhase
 {
@@ -285,6 +287,24 @@ function onLoadPage()
         true,
       );
 
+    // Handle app going to background/foreground
+    document.addEventListener("visibilitychange", function() {
+        if (document.hidden) {
+            pauseApp();
+        } else {
+            resumeApp();
+        }
+    });
+
+    // Also handle window blur/focus for desktop browsers
+    window.addEventListener("blur", function() {
+        pauseApp();
+    });
+
+    window.addEventListener("focus", function() {
+        resumeApp();
+    });
+
     document.addEventListener("touchstart", 
         function (evt)
         {
@@ -408,6 +428,13 @@ function onLoadPage()
 
 function onInternalUpdate(now)
 {
+    // Skip updates when app is paused/backgrounded
+    if (appPaused)
+    {
+        window.requestAnimationFrame(onInternalUpdate);
+        return;
+    }
+
     let dt = (Date.now() - lastUpdateTime) / 1000;
     dt = Math.min(dt, 1/60);
     lastUpdateTime = Date.now();
@@ -1077,11 +1104,36 @@ function showLoadingC64(ctx, rect)
 
     let bandCount = Math.floor(rect.h / bandH) + 1;
     let offy = 0;
-    for(let i = 0; i < bandCount; i++) 
+    for(let i = 0; i < bandCount; i++)
     {
         ctx.fillStyle = pickRandomArrayElement(colors);
         ctx.fillRect(rect.x, rect.y + offy, rect.w, bandH);
         offy += bandH;
     }
     ctx.restore();
+}
+
+function pauseApp()
+{
+    if (appPaused) return;
+    appPaused = true;
+
+    // Pause all sounds
+    for (let snd of allSounds)
+    {
+        if (!snd.paused)
+        {
+            musicWasPlayingBeforePause = true;
+            snd.pause();
+        }
+    }
+}
+
+function resumeApp()
+{
+    if (!appPaused) return;
+    appPaused = false;
+
+    // Reset the time to prevent huge delta time jumps
+    lastUpdateTime = Date.now();
 }
