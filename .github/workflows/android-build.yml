@@ -65,7 +65,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: dragonsweeper-release
-          path: android/app/build/outputs/apk/release/app-release-unsigned.apk
+          path: android/app/build/outputs/apk/release/app-release.apk
           retention-days: 30
 
   release:
@@ -100,7 +100,7 @@ jobs:
       - name: Rename APKs
         run: |
           mv ./artifacts/debug/app-debug.apk ./artifacts/dragonsweeper-${{ steps.get_version.outputs.VERSION }}-debug.apk
-          mv ./artifacts/release/app-release-unsigned.apk ./artifacts/dragonsweeper-${{ steps.get_version.outputs.VERSION }}-release.apk
+          mv ./artifacts/release/app-release.apk ./artifacts/dragonsweeper-${{ steps.get_version.outputs.VERSION }}.apk
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
@@ -112,19 +112,19 @@ jobs:
             A roguelike minesweeper adventure!
 
             ### Downloads
+            - **dragonsweeper-${{ steps.get_version.outputs.VERSION }}.apk** - Release build (recommended)
             - **dragonsweeper-${{ steps.get_version.outputs.VERSION }}-debug.apk** - Debug build (for testing)
-            - **dragonsweeper-${{ steps.get_version.outputs.VERSION }}-release.apk** - Release build (unsigned)
 
             ### Installation
             1. Download the APK file
             2. Enable "Install from unknown sources" in your Android settings
             3. Open the APK file to install
 
-            ### Note
-            The release APK is unsigned. For production use, you may want to sign it with your own keystore.
+            ### Credits
+            Game by Daniel Benmergui - https://danielben.itch.io/dragonsweeper
           files: |
+            ./artifacts/dragonsweeper-${{ steps.get_version.outputs.VERSION }}.apk
             ./artifacts/dragonsweeper-${{ steps.get_version.outputs.VERSION }}-debug.apk
-            ./artifacts/dragonsweeper-${{ steps.get_version.outputs.VERSION }}-release.apk
           draft: false
           prerelease: false
         env:
